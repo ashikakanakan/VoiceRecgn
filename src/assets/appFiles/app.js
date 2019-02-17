@@ -14,14 +14,10 @@ var initialize = (function() {
 		var audioContext //audio context to help us record
 		
 		var recordButton = document.getElementById("recordButton");
-		var stopButton = document.getElementById("stopButton");
-		var pauseButton = document.getElementById("pauseButton");
-
+		
 		//add events to those 2 buttons
 		recordButton.addEventListener("click", startRecording);
-		stopButton.addEventListener("click", stopRecording);
-		pauseButton.addEventListener("click", pauseRecording);
-	  }
+	 }
 	}
   
   })(initialize||{})
@@ -41,8 +37,7 @@ function startRecording() {
 	*/
 
 	recordButton.disabled = true;
-	stopButton.disabled = false;
-	pauseButton.disabled = false
+
 
 	/*
     	We're using the standard promise based getUserMedia() 
@@ -80,12 +75,14 @@ function startRecording() {
 
 		console.log("Recording started");
 
+		console.log("Recording stops in 5 seconds");
+		setTimeout(function() { stopRecording(); }, 6000);
+
 	}).catch(function(err) {
 		  //enable the record button if getUserMedia() fails
 		  console.log(err)
     	recordButton.disabled = false;
-    	stopButton.disabled = true;
-    	pauseButton.disabled = true;
+
 	});
 }
 
@@ -106,13 +103,6 @@ function pauseRecording(){
 function stopRecording() {
 	console.log("stopButton clicked");
 
-	//disable the stop button, enable the record too allow for new recordings
-	stopButton.disabled = true;
-	recordButton.disabled = false;
-	pauseButton.disabled = true;
-
-	//reset button just in case the recording is stopped while paused
-	pauseButton.innerHTML="Pause";
 	
 	//tell the recorder to stop the recording
 	rec.stop();
@@ -125,6 +115,7 @@ function stopRecording() {
 }
 
 function createDownloadLink(blob) {
+	console.log(blob)
 	
 	var url = URL.createObjectURL(blob);
 	var au = document.createElement('audio');
