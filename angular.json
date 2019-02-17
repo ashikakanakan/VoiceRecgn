@@ -25,7 +25,8 @@
             "styles": [
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": ["src/assets/appFiles/app.js",
+              "src/assets/appFiles/record.js"]
           },
           "configurations": {
             "production": {
