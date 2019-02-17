@@ -1,5 +1,5 @@
 <?php
-print_r($_FILES); //this will print out the received name, temp name, type, size, etc.
+echo($_FILES); //this will print out the received name, temp name, type, size, etc.
 
 
 $size = $_FILES['audio_data']['size']; //the size in bytes

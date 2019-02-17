@@ -7,12 +7,13 @@ var initialize = (function() {
 
 		var gumStream; 						//stream from getUserMedia()
 		var rec; 							//Recorder.js object
-		var input; 							//MediaStreamAudioSourceNode we'll be recording
+		var input;
+		var timeSet; 							//MediaStreamAudioSourceNode we'll be recording
 		
 		// shim for AudioContext when it's not avb. 
 		var AudioContext = window.AudioContext || window.webkitAudioContext;
 		var audioContext //audio context to help us record
-		
+			
 		var recordButton = document.getElementById("recordButton");
 		
 		//add events to those 2 buttons
@@ -22,43 +23,30 @@ var initialize = (function() {
   
   })(initialize||{})
 
-function startRecording() {
-	console.log("recordButton clicked");
+var startRecording= (function () {
+	return {
+		start : function(time) {
+			console.log("recordButton clicked");
+		// Simple constraints object, for more advanced audio features see
+		// https://addpipe.com/blog/audio-constraints-getusermedia/  
+		var constraints = { audio: true, video:false }
+			//Disable the record button until we get a success or fail from getUserMedia() 
 
-	/*
-		Simple constraints object, for more advanced audio features see
-		https://addpipe.com/blog/audio-constraints-getusermedia/
-	*/
-    
-    var constraints = { audio: true, video:false }
+			// We're using the standard promise based getUserMedia() 
+			// https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
+		timeSet = time;
 
- 	/*
-    	Disable the record button until we get a success or fail from getUserMedia() 
-	*/
-
-	recordButton.disabled = true;
-
-
-	/*
-    	We're using the standard promise based getUserMedia() 
-    	https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
-	*/
-
-	navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+		navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
 		console.log("getUserMedia() success, stream created, initializing Recorder.js ...");
-
-		/*
-			create an audio context after getUserMedia is called
-			sampleRate might change after getUserMedia is called, like it does on macOS when recording through AirPods
-			the sampleRate defaults to the one set in your OS for your playback device
-
-		*/
+			// create an audio context after getUserMedia is called
+			// sampleRate might change after getUserMedia is called, like it does on macOS when recording through AirPods
+			// the sampleRate defaults to the one set in your OS for your playback device
 		audioContext = new AudioContext();
 
 		//update the format 
+		audioContext.sampleRate = 16000
 		document.getElementById("formats").innerHTML="Format: 1 channel pcm @ "+audioContext.sampleRate/1000+"kHz"
-
-		/*  assign to gumStream for later use  */
+			/*  assign to gumStream for later use  */
 		gumStream = stream;
 		
 		/* use the stream */
@@ -75,30 +63,17 @@ function startRecording() {
 
 		console.log("Recording started");
 
-		console.log("Recording stops in 5 seconds");
-		setTimeout(function() { stopRecording(); }, 6000);
+		setTimeout(function() { stopRecording(); }, time);
+		
+		}).catch(function(err) {
+			//enable the record button if getUserMedia() fails
+			console.log(err)
+			recordButton.disabled = false;
 
-	}).catch(function(err) {
-		  //enable the record button if getUserMedia() fails
-		  console.log(err)
-    	recordButton.disabled = false;
-
-	});
-}
-
-function pauseRecording(){
-	console.log("pauseButton clicked rec.recording=",rec.recording );
-	if (rec.recording){
-		//pause
-		rec.stop();
-		pauseButton.innerHTML="Resume";
-	}else{
-		//resume
-		rec.record()
-		pauseButton.innerHTML="Pause";
-
-	}
-}
+		});
+		}
+	}	
+})(startRecording||{})
 
 function stopRecording() {
 	console.log("stopButton clicked");
@@ -115,15 +90,22 @@ function stopRecording() {
 }
 
 function createDownloadLink(blob) {
-	console.log(blob)
-	
+	console.log(blob)	
+
 	var url = URL.createObjectURL(blob);
 	var au = document.createElement('audio');
 	var li = document.createElement('li');
 	var link = document.createElement('a');
 
 	//name of .wav file to use during upload and download (without extendion)
-	var filename = new Date().toISOString();
+	var filename = "";
+
+	if(timeSet == 6000) {
+		filename = "wake"
+	}
+	else {
+		filename = "enroll"
+	}
 
 	//add controls to the <audio> element
 	au.controls = true;
@@ -149,12 +131,12 @@ function createDownloadLink(blob) {
 	upload.innerHTML = "Upload";
 	upload.addEventListener("click", function(event){
 		  var xhr=new XMLHttpRequest();
-		  xhr.onload=function(e) {
+		   xhr.onload=function(e) {
 		      if(this.readyState === 4) {
-		          console.log("Server returned: ",e.target.responseText);
-		      }
-		  };
-		  var fd=new FormData();
+		           console.log("Server returned: ",e.target.responseText);
+		}
+		};
+		var fd=new FormData();
 		  fd.append("audio_data",blob, filename);
 		  xhr.open("POST","upload.php",true);
 		  xhr.send(fd);
